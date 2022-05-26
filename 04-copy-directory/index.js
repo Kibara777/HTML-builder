@@ -1,29 +1,17 @@
-const path = require('path');
-const fs = require('fs/promises');
+const { copyFile, mkdir, readdir, unlink } = require('fs/promises');
+const { resolve } = require('path');
 
-const createFolder = async(path) => {
-  return new Promise(() => {
-    fs.mkdir(path, {recursive: true}, (err) => {
-      if(err){
-        throw err;
-      }
-    });
-  });
-};
+const filesPath = resolve(__dirname, 'files');
+const copyPath = resolve(__dirname, 'files-copy');
 
-const copyFolder = async() => {
-  return new Promise(() => {
-    fs.readdir(path.join(__dirname, 'files'), {withFileTypes: true})
-      .then((files) => {
-        files.map(file => {
-          if (file.isFile()) {
-            fs.copyFile(path.join(__dirname, 'files', file.name), path.join(__dirname, 'files-copy', file.name));
-          }
-        });
-      });
-  });
-};
-
-createFolder(path.join(__dirname, 'files-copy'))
-  .then(copyFolder());
-
+(async (path) => {
+  try {
+    await mkdir(copyPath, {recursive: true});
+    const oldCopyFiles = await readdir(copyPath);
+    oldCopyFiles.map(file => unlink(resolve(copyPath, file)));
+    const dataFilesDir = await readdir(filesPath);
+    dataFilesDir.forEach(file => copyFile(resolve(path, file), resolve(copyPath, file)));
+  } catch (error) {
+    console.error('Something go wrong:', error.message);
+  }
+})(filesPath);
